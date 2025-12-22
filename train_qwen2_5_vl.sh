@@ -13,8 +13,8 @@ export NCCL_IB_DISABLE=1
 
 # 数据路径配置
 MODEL_PATH="/home/lijiaji/Qwen2.5-VL-7B-Instruct"
-TRAIN_JSON="/home/lijiaji/mimic_cxr/train_fixed.jsonl"
-VAL_JSON="/home/lijiaji/mimic_cxr/val_fixed.jsonl"
+TRAIN_JSON="/home/lijiaji/mimic_cxr/ms_swift_train.jsonl"
+VAL_JSON="/home/lijiaji/mimic_cxr/ms_swift_val.jsonl"
 OUTPUT_DIR="/home/lijiaji/ms-swift/output/mimic-lora"
 
 # 自动检测 GPU 数量
@@ -53,8 +53,8 @@ EOL
 # 启动训练命令
 swift sft \
   --model /home/lijiaji/Qwen2.5-VL-7B-Instruct \
-  --dataset /home/lijiaji/mimic_cxr/train_fixed.jsonl \
-  --val_dataset /home/lijiaji/mimic_cxr/val_fixed.jsonl \
+  --dataset /home/lijiaji/mimic_cxr/train_fixed_corrected.jsonl \
+  --val_dataset /home/lijiaji/mimic_cxr/train_fixed_corrected.jsonl \
   --train_type lora \
   --columns '{"report": "text", "image_path": "images"}' \
   --num_train_epochs 3 \
@@ -90,5 +90,4 @@ swift sft \
   --ignore_args_error True \
   --model_kwargs '{"device_map": null}' \
   --disable_image_saving \
-  --resume_from_checkpoint /home/lijiaji/ms-swift/output/mimic-lora/v20-20250709-132211/checkpoint-50000 \
   --max_length 2048
