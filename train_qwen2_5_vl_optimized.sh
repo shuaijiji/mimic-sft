@@ -80,7 +80,7 @@ swift sft \
   --train_dataloader_shuffle True \
   --warmup_ratio 0.05 \
   --weight_decay 0.01 \
-  --lora_rank 64 \
+  --lora_rank 32 \
   --lora_alpha 128 \
   --lora_dropout 0.05 \
   --load_best_model_at_end True \
