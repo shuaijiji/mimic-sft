@@ -8,6 +8,8 @@ export MAX_RATIO=200
 export NCCL_ASYNC_ERROR_HANDLING=1
 export NCCL_BLOCKING_WAIT=1
 export TORCH_DIST_FORK_DISABLE=1
+export NCCL_P2P_DISABLE=1
+export NCCL_IB_DISABLE=1
 
 # 数据路径配置
 MODEL_PATH="/home/lijiaji/Qwen2.5-VL-7B-Instruct"
