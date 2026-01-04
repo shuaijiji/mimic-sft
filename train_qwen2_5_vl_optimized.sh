@@ -30,7 +30,11 @@ cat <<EOL > deepspeed_config_optimized.json
     "enabled": true
   },
   "zero_optimization": {
-    "stage": 2
+    "stage": 2,
+    "offload_optimizer": {
+      "device": "cpu",
+      "pin_memory": true
+    }
   },
   "gradient_accumulation_steps": "auto",
   "train_batch_size": "auto",
