@@ -44,37 +44,38 @@ GRADIENT_ACCUMULATION_STEPS=$((GLOBAL_BATCH_SIZE / (PER_DEVICE_BATCH_SIZE * npro
 
 # 启动训练命令 (基于 Qwen3-VL 官方最佳实践重构)
 swift sft \
-  --model ${MODEL_PATH} \
-  --dataset "${TRAIN_JSON}" \
-  --val_dataset "${VAL_JSON}" \
-  --train_type lora \  --dtype bfloat16 \
-  --num_train_epochs 3 \
-  --per_device_train_batch_size ${PER_DEVICE_BATCH_SIZE} \
-  --gradient_accumulation_steps ${GRADIENT_ACCUMULATION_STEPS} \
-  --attn_impl flash_attn \
-  --padding_free true \
-  --learning_rate 1e-4 \
-  --lora_rank 32 \
-  --lora_alpha 128 \
-  --lora_dropout 0.05 \
-  --target_modules all-linear \
-  --freeze_vit true \
-  --freeze_aligner true \
-  --gradient_checkpointing true \
-  --vit_gradient_checkpointing false \
-  --eval_steps 1000 \
-  --save_steps 1000 \
-  --save_total_limit 3 \
-  --logging_steps 10 \
-  --max_length 2048 \
-  --output_dir ${OUTPUT_DIR} \
-  --warmup_ratio 0.05 \
-  --deepspeed zero2 \
-  --dataset_num_proc 4 \
-  --dataloader_num_workers 4 \
-  --load_best_model_at_end True \
-  --metric_for_best_model eval_loss \
-  --greater_is_better False \
-  --ddp_timeout 18000000 \
-  --ignore_args_error True
+--model "${MODEL_PATH}" \
+  --dataset "${TRAIN_JSON}" \
+  --val_dataset "${VAL_JSON}" \
+  --train_type lora \
+  --dtype bfloat16 \
+  --num_train_epochs 3 \
+  --per_device_train_batch_size ${PER_DEVICE_BATCH_SIZE} \
+  --gradient_accumulation_steps ${GRADIENT_ACCUMULATION_STEPS} \
+  --attn_impl flash_attn \
+  --padding_free true \
+  --learning_rate 1e-4 \
+  --lora_rank 32 \
+  --lora_alpha 128 \
+  --lora_dropout 0.05 \
+  --target_modules all-linear \
+  --freeze_vit true \
+  --freeze_aligner true \
+  --gradient_checkpointing true \
+  --vit_gradient_checkpointing false \
+  --eval_steps 1000 \
+  --save_steps 1000 \
+  --save_total_limit 3 \
+  --logging_steps 10 \
+  --max_length 2048 \
+  --output_dir "${OUTPUT_DIR}" \
+  --warmup_ratio 0.05 \
+  --deepspeed zero2 \
+  --dataset_num_proc 4 \
+  --dataloader_num_workers 4 \
+  --load_best_model_at_end True \
+  --metric_for_best_model eval_loss \
+  --greater_is_better False \
+  --ddp_timeout 18000000 \
+  --ignore_args_error True
 
