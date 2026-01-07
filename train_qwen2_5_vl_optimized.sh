@@ -61,7 +61,6 @@ swift sft \
   --target_modules all-linear \
   --freeze_vit true \
   --freeze_aligner true \
-  --gradient_checkpointing true \
   --vit_gradient_checkpointing false \
   --eval_steps 1000 \
   --save_steps 1000 \
