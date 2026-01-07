@@ -62,6 +62,7 @@ swift sft \
   --freeze_vit true \
   --freeze_aligner true \
   --vit_gradient_checkpointing false \
+  --gradient_checkpointing true \
   --eval_steps 1000 \
   --save_steps 1000 \
   --save_total_limit 3 \
