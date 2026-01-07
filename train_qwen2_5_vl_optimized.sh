@@ -45,8 +45,8 @@ GRADIENT_ACCUMULATION_STEPS=$((GLOBAL_BATCH_SIZE / (PER_DEVICE_BATCH_SIZE * npro
 # 启动训练命令 (基于 Qwen3-VL 官方最佳实践重构)
 swift sft \
   --model ${MODEL_PATH} \
-  --dataset ${TRAIN_JSON} \
-  --val_dataset ${VAL_JSON} \
+  --dataset mimic_cxr_train=${TRAIN_JSON} \
+  --val_dataset mimic_cxr_val=${VAL_JSON} \
   --train_type lora \  --torch_dtype bfloat16 \
   --num_train_epochs 3 \
   --per_device_train_batch_size ${PER_DEVICE_BATCH_SIZE} \
