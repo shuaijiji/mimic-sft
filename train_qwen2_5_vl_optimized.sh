@@ -47,8 +47,7 @@ swift sft \
   --model ${MODEL_PATH} \
   --dataset ${TRAIN_JSON} \
   --val_dataset ${VAL_JSON} \
-  --train_type lora \
-  --torch_dtype bf16 \
+  --train_type lora \  --torch_dtype bfloat16 \
   --num_train_epochs 3 \
   --per_device_train_batch_size ${PER_DEVICE_BATCH_SIZE} \
   --gradient_accumulation_steps ${GRADIENT_ACCUMULATION_STEPS} \
