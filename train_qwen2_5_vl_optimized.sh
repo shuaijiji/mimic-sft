@@ -46,8 +46,9 @@ GRADIENT_ACCUMULATION_STEPS=$((GLOBAL_BATCH_SIZE / (PER_DEVICE_BATCH_SIZE * npro
 swift sft \
   --model ${MODEL_PATH} \
   --custom_dataset_info custom_dataset_info.json \
-  --dataset mimic_cxr_train mimic_cxr_val \
-  --train_type lora \  --torch_dtype bfloat16 \
+  --dataset mimic_cxr_train \
+  --val_dataset mimic_cxr_val \
+  --train_type lora \  --dtype bfloat16 \
   --num_train_epochs 3 \
   --per_device_train_batch_size ${PER_DEVICE_BATCH_SIZE} \
   --gradient_accumulation_steps ${GRADIENT_ACCUMULATION_STEPS} \
