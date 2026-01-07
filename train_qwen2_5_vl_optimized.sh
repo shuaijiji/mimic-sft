@@ -61,8 +61,6 @@ swift sft \
   --target_modules all-linear \
   --freeze_vit true \
   --freeze_aligner true \
-  --vit_gradient_checkpointing false \
-  --gradient_checkpointing true \
   --eval_steps 1000 \
   --save_steps 1000 \
   --save_total_limit 3 \
@@ -72,10 +70,9 @@ swift sft \
   --warmup_ratio 0.05 \
   --deepspeed zero2 \
   --dataset_num_proc 4 \
-  --dataloader_num_workers 4 \
+  --dataloader_num_workers 0 \
   --load_best_model_at_end True \
   --metric_for_best_model eval_loss \
   --greater_is_better False \
   --ddp_timeout 18000000 \
   --ignore_args_error True
-
