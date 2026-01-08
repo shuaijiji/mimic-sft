@@ -83,7 +83,6 @@
 ## 💡 使用建议
 
 - **显存优化**：`bf16 + flash_attn + deepspeed zero2 + freeze_vit/aligner` 组合可使 8B VL 模型在 4×A100（80GB）上稳定微调；
-- **任务适配**：若你的任务是**固定位置按钮识别（如快手直播界面）**，建议在数据构造时加入位置偏置（如 bounding box prompt），提升泛化；
 - **调试技巧**：首次运行可设 `--num_train_epochs 0.1` + `--logging_steps 1` 快速验证 pipeline。
 
 > 项目由 **coolG（冀冀）** 维护 🌟  
