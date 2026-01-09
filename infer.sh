@@ -13,4 +13,4 @@ swift infer \
   --model ${MODEL_PATH} \
   --ckpt_dir ${CKPT_PATH} \
   --stream true \
-  --dtype bfloat16
+
