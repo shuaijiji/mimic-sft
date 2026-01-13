@@ -90,39 +90,51 @@ def postprocess_text(preds, labels):
 
 
 def main():
+    print("--- Starting Evaluation Script ---")
     args = parse_args()
+    print(f"Arguments: {args}")
     device = torch.device(args.device)
+    print(f"Using device: {device}")
 
     # --- 加载模型和分词器 ---
-    print("Loading model and tokenizer...")
+    print(f"Step 1: Loading tokenizer from {args.tokenizer_path}...")
     tokenizer = AutoTokenizer.from_pretrained(args.tokenizer_path, trust_remote_code=True)
+    print("Tokenizer loaded.")
+    
+    print(f"Step 2: Loading model from {args.model_path}. This may take a while...")
     model = AutoModelForCausalLM.from_pretrained(
         args.model_path,
         device_map="auto",
         trust_remote_code=True,
         fp16=True, # 或者 bf16=True，根据你的硬件调整
     ).eval()
-    print("Model and tokenizer loaded.")
+    print("Model loaded successfully.")
 
     # --- 加载数据集 ---
-    print(f"Loading dataset from {args.test_data_path}...")
+    print(f"Step 3: Loading dataset from {args.test_data_path}...")
     test_dataset = MimicDataset(args.test_data_path, image_root_path=args.image_root_path)
+    print(f"Found {len(test_dataset)} samples in the dataset.")
+    
+    print("Initializing DataLoader...")
     test_dataloader = DataLoader(
         test_dataset,
         batch_size=args.batch_size,
         shuffle=False,
         collate_fn=collate_fn,
-        num_workers=4,
+        num_workers=0,  # Changed to 0 for debugging
     )
-    print("Dataset loaded.")
+    print("DataLoader initialized.")
 
     # --- 准备输出文件 ---
+    print(f"Step 4: Preparing output directory and file at {args.output_dir}...")
     os.makedirs(args.output_dir, exist_ok=True)
     output_path = os.path.join(args.output_dir, "evaluation_results.csv")
+    print(f"Output will be saved to {output_path}")
     
     all_preds = []
     all_labels = []
 
+    print("Step 5: Starting evaluation loop...")
     with open(output_path, mode='w', newline='') as outfile:
         writer = csv.writer(outfile)
         writer.writerow(["ImagePath", "Instruction", "GroundTruth", "Prediction", "BLEU", "ROUGE-1", "ROUGE-L", "METEOR", "BERTScore-F1"])
@@ -153,7 +165,7 @@ def main():
                 bleu_score = bleu.compute(predictions=[pred], references=[label], max_order=4)['bleu']
                 rouge_score = rouge.compute(predictions=[pred], references=[label], rouge_types=['rouge1', 'rougeL'])
                 meteor_score = meteor.compute(predictions=[pred], references=[label])['meteor']
-                bert_score = bertscore.compute(predictions=[pred], references=[label], lang=args.lang)
+                bert_score = bertscore.compute(predictions=[pred], references=[label], lang='en') # Assuming lang is 'en'
                 bert_f1 = sum(bert_score['f1']) / len(bert_score['f1']) if bert_score['f1'] else 0.0
 
                 writer.writerow([
@@ -167,6 +179,7 @@ def main():
                     meteor_score,
                     bert_f1
                 ])
+    print("Evaluation loop finished.")
 
     # --- 计算并打印总体指标 ---
     print("\n--- Overall Evaluation Metrics ---")
