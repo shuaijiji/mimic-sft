@@ -1,7 +1,7 @@
 import json
 import torch
 from tqdm import tqdm
-from transformers import AutoModelForCausalLM, AutoTokenizer
+from transformers import AutoTokenizer, Qwen3VLForCausalLM
 from peft import PeftModel
 import subprocess
 import sys
@@ -35,7 +35,7 @@ print(f"Using device: {device}")
 # --- 1. Load Model and Tokenizer ---
 print("Loading base model and tokenizer...")
 tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH, trust_remote_code=True)
-model = AutoModelForCausalLM.from_pretrained(
+model = Qwen3VLForCausalLM.from_pretrained(
     MODEL_PATH,
     torch_dtype=torch.bfloat16,
     device_map="auto",
