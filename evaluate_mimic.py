@@ -101,14 +101,17 @@ def main():
     tokenizer = AutoTokenizer.from_pretrained(args.tokenizer_path, trust_remote_code=True)
     print("Tokenizer loaded.")
     
-    print(f"Step 2: Loading model from {args.model_path}. This may take a while...")
+    print(f"Step 2: Loading model from {args.model_path} onto CPU first. This may take a while...")
     model = AutoModelForCausalLM.from_pretrained(
         args.model_path,
-        device_map="auto",
         trust_remote_code=True,
         fp16=True, # 或者 bf16=True，根据你的硬件调整
     ).eval()
-    print("Model loaded successfully.")
+    print("Model loaded to CPU.")
+
+    print(f"Step 2b: Moving model to device: {device}...")
+    model.to(device)
+    print("Model moved to device successfully.")
 
     # --- 加载数据集 ---
     print(f"Step 3: Loading dataset from {args.test_data_path}...")
