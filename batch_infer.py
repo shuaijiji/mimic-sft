@@ -7,7 +7,7 @@ import os
 
 # --- Ensure correct libraries are installed ---
 try:
-    from transformers import AutoTokenizer, AutoModelForCausalLM
+    from transformers import AutoTokenizer, Qwen3VLForCausalLM
     from peft import PeftModel
 except ImportError as e:
     print(f"ImportError: {e}")
@@ -32,7 +32,7 @@ def main():
     print("Loading base model and tokenizer...")
     # For Qwen3-VL, trust_remote_code is necessary
     tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH, trust_remote_code=True)
-    model = AutoModelForCausalLM.from_pretrained(
+    model = Qwen3VLForCausalLM.from_pretrained(
         MODEL_PATH,
         torch_dtype=torch.bfloat16,
         device_map="auto",
