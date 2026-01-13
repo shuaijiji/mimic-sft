@@ -29,8 +29,8 @@ except ImportError:
 GROUND_TRUTH_FILE = "/home/lijiaji/mimic_cxr/img2text_test.jsonl"
 
 # Directory where the model's predictions are saved
-# IMPORTANT: This must match the RESULT_DIR in your eval.sh
-PREDICTIONS_DIR = "/home/lijiaji/ms-swift/output/mimic-lora-optimized/v30-20260107-160108/checkpoint-21000/test_predictions"
+# IMPORTANT: This is the default output directory for swift infer
+PREDICTIONS_DIR = "/home/lijiaji/ms-swift/output/mimic-lora-optimized/v30-20260107-160108/checkpoint-21000/infer_result"
 
 
 def find_latest_prediction_file(directory):
