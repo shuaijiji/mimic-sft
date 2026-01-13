@@ -22,8 +22,7 @@ swift eval \
   --model "${MODEL_PATH}" \
   --ckpt_dir "${CKPT_PATH}" \
   --dataset "${TEST_JSON}" \
-  --metrics rouge bleu \
-  --eval_batch_size 4 \
+
   --max_length 2048
 
 echo "Evaluation finished. Results are saved in the checkpoint directory."
