@@ -28,7 +28,7 @@ swift eval \
   --model "${MODEL_PATH}" \
   --ckpt_dir "${CKPT_PATH}" \
   --eval_dataset general_qa \
-  --eval_dataset_args "path=${EVAL_FILE}" \
+  --eval_dataset_args '{"path": "'"${EVAL_FILE}"'"}' \
   --max_length 2048
 
 echo -e "\n--- Evaluation finished ---"
