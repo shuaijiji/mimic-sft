@@ -1,6 +1,6 @@
 # debug_load_model.py
 import torch
-from transformers import AutoModelForCausalLM
+from transformers import AutoModelForConditionalGeneration
 import sys
 import time
 
@@ -19,7 +19,7 @@ def main():
         print(f"[{time.ctime()}] Starting AutoModelForCausalLM.from_pretrained...")
         
         # We load the model directly to CPU to isolate the problem.
-        model = AutoModelForCausalLM.from_pretrained(
+        model = AutoModelForConditionalGeneration.from_pretrained(
             model_path,
             trust_remote_code=True,
             fp16=True,
