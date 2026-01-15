@@ -7,7 +7,7 @@ import os
 
 # --- Ensure correct libraries are installed ---
 try:
-    from transformers import AutoTokenizer, Qwen3VLForCausalLM
+    from transformers import AutoTokenizer, Qwen3VLForConditionalGeneration as Qwen3VLForCausalLM
     from peft import PeftModel
 except ImportError as e:
     print(f"ImportError: {e}")
