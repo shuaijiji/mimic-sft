@@ -1,0 +1,56 @@
+# eval_config.yaml
+
+# 1. 定义你的模型
+model:
+  # 这里填写你合并后模型的本地路径
+  path: /home/lijiaji/mimic-sft/merged_mimic_model
+  
+  # 指定模型类型为 vlm (Vision Language Model)
+  model_type: vlm
+  
+  # 模型加载参数 (非常重要)
+  model_args:
+    # 必须开启，以便加载非官方模型
+    trust_remote_code: True
+    # 根据你的硬件设置，bfloat16 或 float16
+    torch_dtype: "bfloat16" 
+    # 让 transformers 自动分配 GPU
+    device_map: "auto"
+
+# 2. 定义你的数据集
+datasets:
+  # 给你的数据集起个名字，比如 mimic_cxr_vqa
+  mimic_cxr_vqa:
+    # 指定数据集类型为自定义 vlm
+    type: custom_vlm
+    
+    # 数据集文件路径
+    path: ./mimic_eval_dataset.json
+    
+    # 定义数据集的字段映射
+    # 告诉 evalscope 哪个字段是图片，哪个是问题，哪个是答案
+    map:
+      image: image
+      prompt: prompt
+      label: label
+      
+    # 定义评测指标
+    metrics:
+      # 使用 VLM 领域常用的 VQA 评估器
+      - type: vqa
+        # 在 VQA 评估器内部，我们再指定具体的文本生成指标
+        # 注意：这里的指标名称可能需要根据 evalscope 的实际支持情况微调
+        # 我们先使用标准的 rouge, bleu, bertscore
+        sub_metrics:
+          - type: rouge
+          - type: bleu
+          - type: bertscore
+          - type: meteor
+
+# 3. 全局评测配置
+eval:
+  # 设置评测的批次大小
+  batch_size: 4
+  
+  # 如果你只想测试一部分数据，可以设置 limit
+  # limit: 10
