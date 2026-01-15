@@ -52,44 +52,48 @@ def main():
     print(f"Found {len(test_data)} samples in the test set.")
 
     # --- 4. Batch Inference ---
-    # We will process using the model.chat() method, which is the most reliable way.
+    # Manually implementing the core logic of tokenization, generation, and decoding.
     print(f"Starting inference with batch size: {BATCH_SIZE}")
     
     with open(OUTPUT_FILE_PATH, 'w', encoding='utf-8') as out_f:
         for i in tqdm(range(0, len(test_data), BATCH_SIZE)):
             batch_data = test_data[i:i + BATCH_SIZE]
             
-            # Prepare queries for the batch
-            batch_queries = []
+            # --- 1. Manually build the prompt string ---
+            prompts = []
+            raw_prompts_for_cleaning = []
             for item in batch_data:
                 messages = item['messages']
                 relative_image_path = item['images'][0]
                 full_image_path = os.path.join(IMAGE_BASE_DIR, relative_image_path)
                 
-                # The query for model.chat is a list of dictionaries
-                query = [
-                    {'image': full_image_path},
-                    {'text': messages[0]['content'].replace('<image>', '').strip()}
-                ]
-                batch_queries.append(query)
+                # Manually construct the prompt string in Qwen-VL format
+                # This is the most reliable way without special tokenizer methods.
+                user_instruction = messages[0]['content'].replace('<image>', '').strip()
+                raw_prompts_for_cleaning.append(user_instruction)
 
-            # Generate responses for the batch
-            # The model.chat method handles tokenization and generation internally
-            try:
-                # Attempt to process as a batch
-                responses, _ = model.chat(tokenizer, queries=batch_queries, history=None, max_new_tokens=2048)
-            except Exception:
-                # Fallback to one-by-one processing if batching fails
-                responses = []
-                for single_query in batch_queries:
-                    response, _ = model.chat(tokenizer, query=single_query, history=None, max_new_tokens=2048)
-                    responses.append(response)
+                # Format: "<img>/path/to/image.jpg</img>user\nInstruction<|im_end|>\nassistant\n"
+                prompt = f"<img>{full_image_path}</img>user\n{user_instruction}<|im_end|>\nassistant\n"
+                prompts.append(prompt)
+            
+            # --- 2. Tokenization ---
+            inputs = tokenizer(prompts, return_tensors='pt', padding=True).to(model.device)
 
+            # --- 3. Generation ---
+            with torch.no_grad():
+                outputs = model.generate(**inputs, max_new_tokens=2048)
+
+            # --- 4. Decoding ---
+            responses = tokenizer.batch_decode(outputs, skip_special_tokens=True)
+            
             # Save results for this batch
             for j, response in enumerate(responses):
                 original_item = batch_data[j]
+                # Clean the prompt from the response
+                cleaned_response = response.replace(raw_prompts_for_cleaning[j], '').strip()
+
                 result_item = {
-                    "prediction": response.strip(),
+                    "prediction": cleaned_response,
                     "ground_truth": original_item['messages'][-1]['content']
                 }
                 out_f.write(json.dumps(result_item) + '\n')
