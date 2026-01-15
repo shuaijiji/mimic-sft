@@ -1,7 +1,6 @@
 import json
 import torch
 from tqdm import tqdm
-import subprocess
 import sys
 import os
 
@@ -11,8 +10,9 @@ try:
     from peft import PeftModel
 except ImportError as e:
     print(f"ImportError: {e}")
-    print("Please ensure you are in the 'QwenGen' conda environment and have run:")
-    print("pip install --upgrade ms-swift transformers accelerate peft sentencepiece")
+    print("Please ensure you are in the correct conda environment (e.g., 'swift_eval') and have run:")
+    print("pip install git+https://github.com/huggingface/transformers.git")
+    print("pip install ms-swift")
     sys.exit(1)
 
 # --- Configuration ---
@@ -30,7 +30,6 @@ def main():
 
     # --- 1. Load Model and Tokenizer ---
     print("Loading base model and tokenizer...")
-    # For Qwen3-VL, trust_remote_code is necessary
     tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH, trust_remote_code=True)
     model = Qwen3VLForCausalLM.from_pretrained(
         MODEL_PATH,
@@ -51,7 +50,7 @@ def main():
         test_data = [json.loads(line) for line in f]
     print(f"Found {len(test_data)} samples in the test set.")
 
-    # --- 4. Batch Inference ---
+    # --- 4. Batch Inference (The Correct Way) ---
     # Manually implementing the core logic of tokenization, generation, and decoding.
     print(f"Starting inference with batch size: {BATCH_SIZE}")
     
@@ -59,7 +58,7 @@ def main():
         for i in tqdm(range(0, len(test_data), BATCH_SIZE)):
             batch_data = test_data[i:i + BATCH_SIZE]
             
-            # --- 1. Manually build the prompt string ---
+            # --- Step 1: Manually build the prompt string ---
             prompts = []
             raw_prompts_for_cleaning = []
             for item in batch_data:
@@ -67,8 +66,6 @@ def main():
                 relative_image_path = item['images'][0]
                 full_image_path = os.path.join(IMAGE_BASE_DIR, relative_image_path)
                 
-                # Manually construct the prompt string in Qwen-VL format
-                # This is the most reliable way without special tokenizer methods.
                 user_instruction = messages[0]['content'].replace('<image>', '').strip()
                 raw_prompts_for_cleaning.append(user_instruction)
 
@@ -76,24 +73,23 @@ def main():
                 prompt = f"<img>{full_image_path}</img>user\n{user_instruction}<|im_end|>\nassistant\n"
                 prompts.append(prompt)
             
-            # --- 2. Tokenization ---
+            # --- Step 2: Tokenization ---
             inputs = tokenizer(prompts, return_tensors='pt', padding=True).to(model.device)
 
-            # --- 3. Generation ---
+            # --- Step 3: Generation ---
             with torch.no_grad():
                 outputs = model.generate(**inputs, max_new_tokens=2048)
 
-            # --- 4. Decoding ---
-            responses = tokenizer.batch_decode(outputs, skip_special_tokens=True)
+            # --- Step 4: Decoding ---
+            # We need to decode the generated tokens, excluding the prompt tokens
+            output_ids = outputs[:, inputs.input_ids.shape[1]:]
+            responses = tokenizer.batch_decode(output_ids, skip_special_tokens=True)
             
             # Save results for this batch
             for j, response in enumerate(responses):
                 original_item = batch_data[j]
-                # Clean the prompt from the response
-                cleaned_response = response.replace(raw_prompts_for_cleaning[j], '').strip()
-
                 result_item = {
-                    "prediction": cleaned_response,
+                    "prediction": response.strip(),
                     "ground_truth": original_item['messages'][-1]['content']
                 }
                 out_f.write(json.dumps(result_item) + '\n')
