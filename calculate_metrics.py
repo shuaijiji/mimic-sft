@@ -54,21 +54,60 @@ def calculate_metrics_with_evaluate(predictions: List[str], references: List[str
         try:
             # BLEU 需要列表格式的参考
             bleu_results = bleu.compute(predictions=predictions, references=[[ref] for ref in references])
-            results['bleu'] = bleu_results.get('bleu', 0.0)
+            # evaluate 库返回的 bleu 通常是 BLEU-4
+            results['bleu-4'] = bleu_results.get('bleu', 0.0)
+            
+            # 计算 BLEU-1, BLEU-2, BLEU-3
+            try:
+                from nltk.translate.bleu_score import sentence_bleu, SmoothingFunction
+                smoothing = SmoothingFunction().method3
+                
+                bleu_1_scores = []
+                bleu_2_scores = []
+                bleu_3_scores = []
+                
+                for pred, ref in zip(predictions, references):
+                    reference = [ref.split()]  # BLEU 需要列表格式
+                    prediction = pred.split()
+                    
+                    if prediction and reference[0]:
+                        bleu_1_scores.append(sentence_bleu(reference, prediction, weights=(1, 0, 0, 0), smoothing_function=smoothing))
+                        bleu_2_scores.append(sentence_bleu(reference, prediction, weights=(0.5, 0.5, 0, 0), smoothing_function=smoothing))
+                        bleu_3_scores.append(sentence_bleu(reference, prediction, weights=(1/3, 1/3, 1/3, 0), smoothing_function=smoothing))
+                
+                if bleu_1_scores:
+                    results['bleu-1'] = sum(bleu_1_scores) / len(bleu_1_scores) * 100
+                    results['bleu-2'] = sum(bleu_2_scores) / len(bleu_2_scores) * 100
+                    results['bleu-3'] = sum(bleu_3_scores) / len(bleu_3_scores) * 100
+            except Exception as e:
+                print(f"警告: 计算 BLEU-1/2/3 失败: {e}，仅保留 BLEU-4")
         except Exception as e:
             print(f"警告: BLEU 计算失败: {e}")
-            results['bleu'] = 0.0
+            results['bleu-1'] = results['bleu-2'] = results['bleu-3'] = results['bleu-4'] = 0.0
     
     if rouge is not None:
         try:
             # ROUGE 需要列表格式的参考
             rouge_results = rouge.compute(predictions=predictions, references=[[ref] for ref in references])
-            results['rouge-1'] = rouge_results.get('rouge1', 0.0)
-            results['rouge-2'] = rouge_results.get('rouge2', 0.0)
-            results['rouge-l'] = rouge_results.get('rougeL', 0.0)
+            # 提取详细的 ROUGE 指标（precision, recall, f1）
+            for rouge_type in ['rouge1', 'rouge2', 'rougeL']:
+                rouge_key = rouge_type.replace('rouge', 'rouge-').replace('L', 'l')
+                rouge_value = rouge_results.get(rouge_type, {})
+                
+                if isinstance(rouge_value, dict):
+                    # 如果返回的是字典，提取 precision, recall, f1
+                    results[f'{rouge_key}-precision'] = rouge_value.get('precision', 0.0)
+                    results[f'{rouge_key}-recall'] = rouge_value.get('recall', 0.0)
+                    results[f'{rouge_key}-f1'] = rouge_value.get('fmeasure', rouge_value.get('f1', 0.0))
+                else:
+                    # 如果返回的是单个值（通常是 F1），只保存 F1
+                    results[f'{rouge_key}-f1'] = rouge_value if rouge_value else 0.0
         except Exception as e:
             print(f"警告: ROUGE 计算失败: {e}")
-            results['rouge-1'] = results['rouge-2'] = results['rouge-l'] = 0.0
+            for rouge_type in ['rouge-1', 'rouge-2', 'rouge-l']:
+                results[f'{rouge_type}-precision'] = 0.0
+                results[f'{rouge_type}-recall'] = 0.0
+                results[f'{rouge_type}-f1'] = 0.0
     
     if meteor is not None:
         try:
@@ -93,7 +132,7 @@ def calculate_metrics_with_evaluate(predictions: List[str], references: List[str
 
 
 def calculate_metrics_with_swift(predictions: List[str], references: List[str]) -> Dict[str, float]:
-    """使用 swift 内置的指标计算函数（适用于中文）"""
+    """使用 swift 内置的指标计算函数（适用于中文），并计算详细的 ROUGE 指标"""
     import sys
     
     # 增加递归深度限制，避免递归超限错误
@@ -130,6 +169,85 @@ def calculate_metrics_with_swift(predictions: List[str], references: List[str]) 
             values = [r.get(key, 0.0) for r in all_results if key in r]
             if values:
                 merged_results[key] = sum(values) / len(values)
+        
+        # 计算 BLEU-1, BLEU-2, BLEU-3（swift 只返回 BLEU-4）
+        try:
+            from nltk.translate.bleu_score import sentence_bleu, SmoothingFunction
+            import jieba
+            smoothing = SmoothingFunction().method3
+            
+            bleu_1_scores = []
+            bleu_2_scores = []
+            bleu_3_scores = []
+            
+            for pred, ref in zip(predictions, references):
+                # 使用 jieba 分词（与 swift 保持一致）
+                prediction = list(jieba.cut(pred))
+                reference = [list(jieba.cut(ref))]  # BLEU 需要列表格式
+                
+                if prediction and reference[0]:
+                    bleu_1_scores.append(sentence_bleu(reference, prediction, weights=(1, 0, 0, 0), smoothing_function=smoothing))
+                    bleu_2_scores.append(sentence_bleu(reference, prediction, weights=(0.5, 0.5, 0, 0), smoothing_function=smoothing))
+                    bleu_3_scores.append(sentence_bleu(reference, prediction, weights=(1/3, 1/3, 1/3, 0), smoothing_function=smoothing))
+            
+            if bleu_1_scores:
+                merged_results['bleu-1'] = sum(bleu_1_scores) / len(bleu_1_scores) * 100
+                merged_results['bleu-2'] = sum(bleu_2_scores) / len(bleu_2_scores) * 100
+                merged_results['bleu-3'] = sum(bleu_3_scores) / len(bleu_3_scores) * 100
+        except Exception as e:
+            print(f"警告: 计算 BLEU-1/2/3 失败: {e}，仅保留 BLEU-4")
+        
+        # 尝试计算详细的 ROUGE 指标（precision, recall, f1）
+        try:
+            import jieba
+            from rouge.rouge import Rouge
+            
+            rouge = Rouge()
+            rouge_precisions = {'rouge-1': [], 'rouge-2': [], 'rouge-l': []}
+            rouge_recalls = {'rouge-1': [], 'rouge-2': [], 'rouge-l': []}
+            rouge_f1s = {'rouge-1': [], 'rouge-2': [], 'rouge-l': []}
+            
+            # 计算每个样本的详细 ROUGE 指标
+            for pred, ref in zip(predictions, references):
+                hypothesis = list(jieba.cut(pred))
+                reference = list(jieba.cut(ref))
+                if not hypothesis or not reference:
+                    continue
+                
+                scores = rouge.get_scores(' '.join(hypothesis), ' '.join(reference))[0]
+                for rouge_type in ['rouge-1', 'rouge-2', 'rouge-l']:
+                    rouge_key = rouge_type.replace('rouge-', 'rouge')
+                    if rouge_key in scores:
+                        rouge_precisions[rouge_type].append(scores[rouge_key]['p'])
+                        rouge_recalls[rouge_type].append(scores[rouge_key]['r'])
+                        rouge_f1s[rouge_type].append(scores[rouge_key]['f'])
+            
+            # 计算平均值
+            for rouge_type in ['rouge-1', 'rouge-2', 'rouge-l']:
+                if rouge_precisions[rouge_type]:
+                    merged_results[f'{rouge_type}-precision'] = sum(rouge_precisions[rouge_type]) / len(rouge_precisions[rouge_type]) * 100
+                    merged_results[f'{rouge_type}-recall'] = sum(rouge_recalls[rouge_type]) / len(rouge_recalls[rouge_type]) * 100
+                    merged_results[f'{rouge_type}-f1'] = sum(rouge_f1s[rouge_type]) / len(rouge_f1s[rouge_type]) * 100
+                else:
+                    # 如果没有详细指标，使用 swift 返回的 F1 值
+                    # swift 返回的键名格式：rouge-1, rouge-2, rouge-l
+                    f1_key = rouge_type  # 已经是正确的格式
+                    if f1_key in merged_results:
+                        merged_results[f'{rouge_type}-f1'] = merged_results[f1_key]
+                        # 删除旧的键，避免重复
+                        del merged_results[f1_key]
+                    else:
+                        merged_results[f'{rouge_type}-f1'] = 0.0
+                    merged_results[f'{rouge_type}-precision'] = 0.0
+                    merged_results[f'{rouge_type}-recall'] = 0.0
+        except Exception as e:
+            print(f"警告: 计算详细 ROUGE 指标失败: {e}，仅使用 F1 值")
+            # 如果计算详细指标失败，将现有的 F1 值重命名为 -f1
+            for key in list(merged_results.keys()):
+                if key.startswith('rouge-') and not key.endswith('-f1'):
+                    merged_results[f'{key}-f1'] = merged_results[key]
+                    merged_results[f'{key}-precision'] = 0.0
+                    merged_results[f'{key}-recall'] = 0.0
         
         return merged_results
         
@@ -358,15 +476,69 @@ def main():
         print("错误: 无法计算任何指标，请检查依赖安装")
         sys.exit(1)
     
-    # 打印结果
+    # 打印结果（按指标类型分组）
     print("\n" + "=" * 50)
     print("评估结果:")
     print("=" * 50)
+    
+    # 按指标类型分组显示
+    metric_groups = {
+        'BLEU': [],
+        'ROUGE-1': [],
+        'ROUGE-2': [],
+        'ROUGE-L': [],
+        'METEOR': [],
+        'BERTScore': [],
+        '其他': []
+    }
+    
     for metric, value in sorted(results.items()):
         if isinstance(value, float):
-            print(f"{metric}: {value:.4f}")
+            formatted_value = f"{value:.4f}"
         else:
-            print(f"{metric}: {value}")
+            formatted_value = str(value)
+        
+        # 分类指标
+        if 'bleu' in metric.lower():
+            # 统一 BLEU 键名显示，按顺序排列
+            if metric == 'bleu-1':
+                metric_groups['BLEU'].append(('BLEU-1', formatted_value))
+            elif metric == 'bleu-2':
+                metric_groups['BLEU'].append(('BLEU-2', formatted_value))
+            elif metric == 'bleu-3':
+                metric_groups['BLEU'].append(('BLEU-3', formatted_value))
+            elif metric == 'bleu-4':
+                metric_groups['BLEU'].append(('BLEU-4', formatted_value))
+            elif metric == 'bleu':
+                metric_groups['BLEU'].append(('BLEU', formatted_value))
+            else:
+                metric_groups['BLEU'].append((metric, formatted_value))
+        elif 'rouge-1' in metric.lower():
+            metric_groups['ROUGE-1'].append((metric, formatted_value))
+        elif 'rouge-2' in metric.lower():
+            metric_groups['ROUGE-2'].append((metric, formatted_value))
+        elif 'rouge-l' in metric.lower() or 'rouge-l' in metric.lower():
+            metric_groups['ROUGE-L'].append((metric, formatted_value))
+        elif 'meteor' in metric.lower():
+            metric_groups['METEOR'].append((metric, formatted_value))
+        elif 'bertscore' in metric.lower():
+            metric_groups['BERTScore'].append((metric, formatted_value))
+        else:
+            metric_groups['其他'].append((metric, formatted_value))
+    
+    # 按组打印（BLEU 组需要特殊排序）
+    for group_name, metrics in metric_groups.items():
+        if metrics:
+            print(f"\n{group_name}:")
+            if group_name == 'BLEU':
+                # BLEU 按数字顺序排序
+                bleu_order = {'BLEU-1': 1, 'BLEU-2': 2, 'BLEU-3': 3, 'BLEU-4': 4, 'BLEU': 5}
+                metrics.sort(key=lambda x: bleu_order.get(x[0], 99))
+            else:
+                metrics.sort()
+            for metric, value in metrics:
+                print(f"  {metric}: {value}")
+    
     print("=" * 50)
     
     # 保存结果
